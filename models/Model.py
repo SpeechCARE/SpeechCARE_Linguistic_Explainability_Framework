@@ -62,7 +62,6 @@ class TBNet_(nn.Module):
         return x
     
 
-    
 class MultiHeadAttentionAddNorm(nn.Module):
     def __init__(self, embedding_dim, num_heads, dropout):
 
@@ -92,6 +91,7 @@ class GatingNetwork(nn.Module):
     def forward(self, x):
         gate_weights = self.fc(x)
         return self.softmax(gate_weights)  # Ensure weights sum to 1
+
 
 
 class TBNet(nn.Module):
@@ -200,4 +200,4 @@ class TBNet(nn.Module):
             weight_demography.unsqueeze(1) * demography_out
         )
 
-        return fused_output, speech_out, txt_out, demography_out, weight_speech, weight_txt, weight_demography
+        return fused_output

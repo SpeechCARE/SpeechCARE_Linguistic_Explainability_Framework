@@ -65,10 +65,11 @@ class Trainer(ModelWrapper):
             pred_y, true_y, loss_list = [], [], []
 
             for step, batch in enumerate(dataloader):
+           
                 (input_values, input_ids, demography, attention_masks, labels) = [t.to(self.device) for t in batch[:5]]
-
+      
                 model.zero_grad()
-                outputs, _, _, _, _, _, _ = model(input_values, input_ids, demography, attention_masks)
+                outputs = model(input_values, input_ids, demography, attention_masks)
 
                 loss = criterion(outputs, labels)
                 loss.backward()
@@ -95,7 +96,7 @@ class Trainer(ModelWrapper):
             uids = batch[5]
 
             with torch.no_grad():
-                outputs, _, _, _, _, _, _ = model(input_values, input_ids, demography, attention_masks)
+                outputs = model(input_values, input_ids, demography, attention_masks)
                 loss = criterion(outputs, labels)
 
             output_probs = F.softmax(outputs, dim = 1)
@@ -111,7 +112,7 @@ class Trainer(ModelWrapper):
         return np.mean(loss_list), pred_y, true_y, pred_probs, uid_list
 
 
-
+    
     def train_and_evaluate(self, n_epochs):
         print('')
 
@@ -148,8 +149,6 @@ class Trainer(ModelWrapper):
         best_model.load_state_dict(torch.load(self.MODEL_PATH))
         return best_model, self.loss_list, self.metric_list
 
-
-
     def predict(self, model, test_df):
 
         model.eval()
@@ -161,7 +160,7 @@ class Trainer(ModelWrapper):
             uids = batch[5]
 
             with torch.no_grad():
-                outputs, _, _, _, _, _, _ = model(input_values, input_ids, demography, attention_masks)
+                outputs = model(input_values, input_ids, demography, attention_masks)
 
             output_probs = F.softmax(outputs, dim = 1)
             pred_y = torch.argmax(output_probs, dim = 1).cpu().numpy()
