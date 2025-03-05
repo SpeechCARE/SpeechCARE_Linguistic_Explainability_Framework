@@ -4,8 +4,8 @@ import torch
 import yaml
 from typing import Optional, Tuple, Dict, Any
 
-# # Add custom paths to sys.path (if needed)
-# sys.path.append("")
+ # Add custom paths to sys.path (if needed)
+sys.path.append("SpeechCARE_Linguistic_Explainability_Framework")
 
 from SHAP.Shap import LinguisticShap
 from models.ModelWrapper import ModelWrapper
