@@ -3,9 +3,8 @@ import torch
 import shap
 import numpy as np
 
-# Add custom paths to sys.path (if needed)
-sys.path.append("")
-from SpeechCARE_Linguistic_Explainability_Framework.SHAP.text_visualization import text, unpack_shap_explanation_contents, process_shap_values
+
+from SHAP.text_visualization import text, unpack_shap_explanation_contents, process_shap_values
 
 
 class LinguisticShap():

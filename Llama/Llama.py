@@ -1,6 +1,6 @@
 import requests
 import json
-from SpeechCARE_Linguistic_Explainability_Framework.SHAP.text_visualization import text
+from SHAP.text_visualization import text
 
 def get_llama_interpretation(llama_api_key,transcription,predicted_label,shap_dict, shap_values):
         

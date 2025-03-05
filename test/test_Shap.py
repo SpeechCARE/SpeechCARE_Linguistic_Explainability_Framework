@@ -4,12 +4,12 @@ import torch
 import yaml
 from typing import Optional, Tuple, Dict, Any
 
-# Add custom paths to sys.path (if needed)
-sys.path.append("")
+# # Add custom paths to sys.path (if needed)
+# sys.path.append("")
 
-from SpeechCARE_Linguistic_Explainability_Framework.SHAP.Shap import LinguisticShap
-from SpeechCARE_Linguistic_Explainability_Framework.models.ModelWrapper import ModelWrapper
-from SpeechCARE_Linguistic_Explainability_Framework.utils.Config import Config
+from SHAP.Shap import LinguisticShap
+from models.ModelWrapper import ModelWrapper
+from utils.Config import Config
 
 def parse_arguments() -> argparse.Namespace:
     """

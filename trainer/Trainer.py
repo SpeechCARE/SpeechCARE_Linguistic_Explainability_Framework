@@ -1,4 +1,5 @@
-from SpeechCARE_Linguistic_Explainability_Framework.utils import Utils,set_seed, report
+from utils import Utils,set_seed, report
+from models.ModelWrapper import ModelWrapper
 
 import copy
 
@@ -9,7 +10,6 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn.functional as F
 from torch import nn
 
-from SpeechCARE_Linguistic_Explainability_Framework.models.ModelWrapper import ModelWrapper
 
 from transformers import AutoTokenizer
 from transformers import Wav2Vec2FeatureExtractor

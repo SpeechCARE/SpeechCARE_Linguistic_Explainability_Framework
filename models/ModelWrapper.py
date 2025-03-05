@@ -1,5 +1,5 @@
-from SpeechCARE_Linguistic_Explainability_Framework.models.Model import TBNet
-from SpeechCARE_Linguistic_Explainability_Framework.utils.Utils import report
+from models.Model import TBNet
+from utils.Utils import report
 
 import torch
 import torch.nn as nn
