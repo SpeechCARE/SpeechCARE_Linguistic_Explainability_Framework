@@ -410,7 +410,7 @@ def text(
     <hr style="height: 1px; background-color: #e6f2f4; border: none; margin-top: 18px; margin-bottom: 18px; border-top: 1px dashed #ccc;"">
     <div align="center" style="margin-top: -35px;"><div style="display: inline-block; background: #e6f2f4; padding: 5px; color: #999; font-family: monospace"></div>
     </div>
-     <div align='center' style='background: rgba(230.0, 242.0, 244.0, 1.0); padding-bottom:25px; font-family: Arial'>
+     <div align='center' style='background: rgba(230.0, 242.0, 244.0, 1.0); padding-bottom:25px; font-family: Arial; color: rgb(120,120,120);'>
                 """
             out += text(
                 v,
