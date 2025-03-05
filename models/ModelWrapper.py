@@ -1,5 +1,5 @@
-from SpeechCARE_Linguistic_Explainability_Framework.utils import Utils, report
 from SpeechCARE_Linguistic_Explainability_Framework.models.Model import TBNet
+from SpeechCARE_Linguistic_Explainability_Framework.utils.Utils import report
 
 import torch
 import torch.nn as nn
@@ -7,24 +7,22 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
+
 from transformers import AutoTokenizer
 from transformers import Wav2Vec2FeatureExtractor
-
-
 
  
 class ModelWrapper:
     def __init__(self, config):
 
         self.config = config
-        self.utils = Utils(config)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         report(f'{self.device} is available', True)
     
 
-    def get_model(self, device, weights_path= None):
+    def get_model(self, weights_path= None):
         """Returns the model instance."""
-        model = TBNet(self.config).to(device)
+        model = TBNet(self.config).to(self.device)
         if weights_path!= None: model.load_state_dict(torch.load(weights_path))
         return model
     
@@ -63,7 +61,7 @@ class ModelWrapper:
         model = self.get_model(self.config , device ,weights_path)
         model.eval()
         model.zero_grad()
-        tokenizer = AutoTokenizer.from_pretrained(self.config .transformer_chp)
+        tokenizer = AutoTokenizer.from_pretrained(self.config.transformer_chp)
         return model, tokenizer
     
   

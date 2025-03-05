@@ -1,10 +1,12 @@
+import sys
+import torch
+import shap
 import numpy as np
 
-import torch
+# Add custom paths to sys.path (if needed)
+sys.path.append("")
+from SpeechCARE_Linguistic_Explainability_Framework.SHAP.text_visualization import text, unpack_shap_explanation_contents, process_shap_values
 
-import shap
-
-from text_visualization import text, unpack_shap_explanation_contents, process_shap_values
 
 class LinguisticShap():
     def __init__(self,model):

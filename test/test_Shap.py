@@ -54,17 +54,40 @@ def main():
     args = parse_arguments()
 
     config = Config()
-
+    # Initialize model configuration
+    SIMPLE_ATTENTION = 16
+    config = Config()
+    config.seed = 133
+    config.bs = 4
+    config.epochs = 14
+    config.lr = 1e-6
+    config.hidden_size = 128
+    config.wd = 1e-3
+    config.integration = SIMPLE_ATTENTION
+    config.num_labels = 3
+    config.txt_transformer_chp = config.MGTEBASE
+    config.speech_transformer_chp = config.mHuBERT
+    config.segment_size = 5
+    config.active_layers = 12
+    config.demography = 'age_bin'
+    config.demography_hidden_size = 128
+    config.max_num_segments = 7
     # Initialize and load the model
     model = initialize_model(config, args.model_checkpoint)
 
     # Run inference to get transcription and predicted_label for the model or set them manually
     demography_tensor = torch.tensor(args.demography_info, dtype=torch.float16).reshape(1, 1) # Convert demographic information to a tensor
-    model.inference(args.audio_path, demography_tensor, config)
+    predicted_label , _ = model.inference(args.audio_path, demography_tensor, config)
+
+    print(type(predicted_label))
+    print((predicted_label.shape))
+    transcription = model.transcription #save
+    print(type(transcription))
+
 
     # Initialize SHAP explainer
-    shap = LinguisticShap(model)
-    html_result = shap.get_text_shap_results()
+    # shap = LinguisticShap(model)
+    # html_result = shap.get_text_shap_results()
 
 
 
