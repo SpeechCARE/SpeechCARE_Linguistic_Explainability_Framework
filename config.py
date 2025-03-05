@@ -28,6 +28,7 @@ class Config():
 
     def get_subnet_insize(self):
         if self.transformer_checkpoint == self.HUBERT:
+            
             return 768
         elif self.transformer_checkpoint == self.WAV2VEC2:
             return 768
