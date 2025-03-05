@@ -1,12 +1,11 @@
 from SpeechCARE_Linguistic_Explainability_Framework.utils import Utils, report
+from SpeechCARE_Linguistic_Explainability_Framework.models.Model import TBNet
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
- 
-from Model import TBNet
 
 from transformers import AutoTokenizer
 from transformers import Wav2Vec2FeatureExtractor
@@ -25,7 +24,7 @@ class ModelWrapper:
 
     def get_model(self, device, weights_path= None):
         """Returns the model instance."""
-        model = TBNet(self.config ).to(device)
+        model = TBNet(self.config).to(device)
         if weights_path!= None: model.load_state_dict(torch.load(weights_path))
         return model
     

@@ -1,107 +1,118 @@
-import os
-import pandas as pd
-
-import utils as shapUtils
-
-from SpeechCARE_Linguistic_Explainability_Framework.trainer.Trainer import Trainer 
-from SpeechCARE_Linguistic_Explainability_Framework.config import Config
-from SpeechCARE_Linguistic_Explainability_Framework.models.Model import TextOnlyModel_withoutGate
-from SpeechCARE_Linguistic_Explainability_Framework.dataset import utils as dsUtils
-
-from SpeechCARE_Linguistic_Explainability_Framework.utils.Utils import report
-
-
-import shap
+import numpy as np
 
 import torch
 
+import shap
 
+from text_visualization import text, unpack_shap_explanation_contents, process_shap_values
 
-def compute_shap_values(tokenizer,input):
+class LinguisticShap():
+    def __init__(self,model):
+        self.model = model
+        self.text_explainer = shap.Explainer(self.calculate_text_shap_values, self.model.tokenizer, output_names=self.model.labels, hierarchical_values=True)
 
-    text_explainer = shap.Explainer(utils.text_predict, tokenizer, output_names=labels, hierarchical_values=True)
-    control_textData_shap_values = text_explainer(input)
+    def calculate_text_shap_values(self, text):
+        device = next(self.model.parameters()).device
+        # Tokenize and encode the input
+        input_ids = torch.tensor([self.model.tokenizer.encode(v, padding="max_length", max_length=300, truncation=True) for v in text]).to(device)
+        attention_masks = (input_ids != 0).type(torch.int64).to(device)
+        # Pass through the model
+        # outputs = self.text_only_classification(input_ids, attention_masks).detach().cpu().numpy()
+        txt_embeddings = self.model.txt_transformer(input_ids=input_ids, attention_mask=attention_masks)
+        txt_cls = txt_embeddings.last_hidden_state[:, 0, :]
+        txt_x = self.model.txt_head(txt_cls)  
+        txt_out = self.model.txt_classifier(txt_x)
+        outputs = txt_out.detach().cpu().numpy()
 
-def get_sample_df(file_path):
-    """Loads and processes the samples dataset."""
-    samples_df = pd.read_excel(file_path)
-    return samples_df
+        # Apply softmax to get probabilities
+        scores = (np.exp(outputs).T / np.exp(outputs).sum(-1)).T
 
-def get_config():
-    config = Config()
-    config.seed = 133
-    config.bs = 4
-    config.epochs = 14
-    config.lr = 1e-6
-    config.hidden_size = 128
-    config.wd = 1e-3
-    config.integration = SIMPLE_ATTENTION
-    config.num_labels = 3
-    config.txt_transformer_chp = config.MGTEBASE
-    config.speech_transformer_chp = config.mHuBERT
-    config.segment_size = 5
-    config.active_layers = 12
-    config.demography = 'age_bin'
-    config.demography_hidden_size = 128
+        # Define a helper function to calculate logit with special handling
+        def safe_logit(p):
+            with np.errstate(divide='ignore', invalid='ignore'):  # Suppress warnings for divide by zero or invalid ops
+                logit = np.log(p / (1 - p))
+                logit[p == 0] = -np.inf  # logit(0) = -inf
+                logit[p == 1] = np.inf   # logit(1) = inf
+                logit[(p < 0) | (p > 1)] = np.nan  # logit(p) is nan for p < 0 or p > 1
+            return logit
 
-    return config
+        # Calculate the new scores based on the specified criteria
+        p_0, p_1, p_2 = scores[:, 0], scores[:, 1], scores[:, 2]
 
+        score_0 = safe_logit(p_0)
+        p_1_p_2_sum = p_1 + p_2
+        score_1 = safe_logit(p_1_p_2_sum)
+        score_2 = score_1  # Same as score_1 per your criteria
 
-def main():
-    """Main function to execute the script."""
-    global PRETRAINED_MODEL_DIR, SAMPLES_DIR, RESULTS_DIR,SIMPLE_ATTENTION, device,labels
+        # Combine the scores into a single array
+        new_scores = np.stack([score_0, score_1, score_2], axis=-1)
+
+        return new_scores
     
-    PRETRAINED_MODEL_DIR = ''
-    SAMPLES_DIR = ''
-    RESULTS_DIR = ''
-    SIMPLE_ATTENTION = 16
-    TRAIN_SUBJECTS = ''
-    VALID_SUBJECTS = ''
-    TEST_SUBJECTS = ''
-    TRAIN_AUDIOS = ''
-    VALID_AUDIOS = ''
-    TEST_AUDIOS = ''
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    labels = ['control', 'mci', 'adrd']
-
-    config = get_config()
-    checkpoint = torch.load('/workspace/Final_model_age_category_128_embedding/Model/model_checkpoint.pth')
-
-    dataset = dsUtils.get_dataset(config,TRAIN_SUBJECTS,VALID_SUBJECTS,TEST_SUBJECTS,TRAIN_AUDIOS,VALID_AUDIOS,TEST_AUDIOS)
-
-    trainer = Trainer(config,dataset,checkpoint)
-
-    text_explainer = shap.Explainer(shapUtils.text_predict, trainer.tokenizer, output_names=labels, hierarchical_values=True)
-
-    samples_df = get_sample_df(os.path.join(SAMPLES_DIR, 'Explainability_Samples.xlsx')) #list
-    samples_txt = samples_df['transcriptions'].to_list()
-    control_textData_shap_values = text_explainer(samples_txt)
-
-    shap_data = []
-    for i, (id, explanation) in enumerate(zip(samples_df['uids'].to_list(), control_textData_shap_values)):
-        data = {
-            "index": id,
-            "tokens": explanation.data.tolist(),  # The tokens from the text
-            "shap_values": explanation.values.tolist(),  # SHAP values for each token
-            "base_values": explanation.base_values.tolist(),
-            "original_text": samples_txt[i],  # The original text (optional),
-            "class": 'control'
-        }
-        shap_data.append(data)
-
-    shapUtils.text(control_textData_shap_values)
-    report("Processing complete.", True)
-
-
-    # text_model = TextOnlyModel_withoutGate(trainer.model.txt_transformer, trainer.model.txt_head, trainer.model.txt_classifier)
-
-
-   
-
-if __name__ == "__main__":
-    main()
-
-
-
-
+    def get_text_shap_results(self):
+        print('Running shap values...')
+        input_text = [str(self.model.transcription)]
+        print('input text:',input_text)
+        
+        shap_values = self.text_explainer(input_text)
+        print('Values explained...')
+        shap_html_code = text(shap_values[:,:,self.model.predicted_label], display=False)
+        return shap_html_code
+    
+    def get_text_shap_dict(self, grouping_threshold=0.01, separator=" "):
+        """
+        Returns a dictionary of token -> SHAP value for the model's current transcription
+        and predicted label.
+    
+        Parameters
+        ----------
+        grouping_threshold : float
+            Merges tokens into a single 'group' if the interaction level is high compared
+            to this threshold. A value near 0.01 is common for minimal grouping.
+        separator : str
+            Used to join subwords if they are merged due to hierarchical grouping. Typically
+            ' ' for normal words, or '' if using GPT-style 'Ġ' tokens.
+    
+        Returns
+        -------
+        dict
+            A dictionary mapping each (possibly merged) token to its SHAP value.
+        """
+    
+        # If there's no transcription yet, run inference or make sure self.transcription is set
+        if not self.transcription:
+            raise ValueError("self.transcription is empty. Run inference(...) first or set it manually.")
+    
+        # Get SHAP values for the text (this uses calculate_text_shap_values under the hood)
+        input_text = [str(self.transcription)]
+        shap_explanations = self.text_explainer(input_text)  
+        # shap_explanations typically has shape [batch, tokens, classes].
+        # We'll pick the first example (index 0), then the predicted_label dimension.
+        # i.e. shap_explanations[0, :, self.predicted_label].
+    
+        # Make sure we handle the predicted label dimension safely
+        if self.predicted_label is None:
+            raise ValueError("self.predicted_label is None. Inference may not have been run.")
+    
+        # The snippet below extracts the single (row, class) explanation:
+        single_shap_values = shap_explanations[0, :, self.predicted_label]
+        # 'single_shap_values' is now a shap.Explanation object representing the token-level SHAP
+        # for whichever label is in self.predicted_label.
+    
+        # Decompose the hierarchical SHAP values into tokens/values
+        values, clustering = unpack_shap_explanation_contents(single_shap_values)
+        tokens, merged_values, group_sizes = process_shap_values(
+            single_shap_values.data,
+            values,
+            grouping_threshold=grouping_threshold,
+            separator=separator,
+            clustering=clustering
+        )
+    
+        # Build the dictionary: token -> SHAP value
+        shap_dict = {}
+        for token, val in zip(tokens, merged_values):
+            # It’s good practice to cast the SHAP value to a plain float
+            shap_dict[token] = float(val)
+    
+        return shap_dict, shap_explanations
