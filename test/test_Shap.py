@@ -1,14 +1,15 @@
 import sys
 import argparse
 import torch
-from typing import Optional, Tuple
+import yaml
+from typing import Optional, Tuple, Dict, Any
 
 # Add custom paths to sys.path (if needed)
 sys.path.append("")
 
 from SpeechCARE_Linguistic_Explainability_Framework.SHAP.Shap import LinguisticShap
 from SpeechCARE_Linguistic_Explainability_Framework.models.ModelWrapper import ModelWrapper
-from SpeechCARE_Linguistic_Explainability_Framework.Config import Config
+from SpeechCARE_Linguistic_Explainability_Framework.utils.Config import Config
 
 def parse_arguments() -> argparse.Namespace:
     """
@@ -51,12 +52,12 @@ def validate_arguments(args: argparse.Namespace) -> None:
             (args.predicted_label is not None and args.transcription is not None)):
         raise ValueError("Either 'audio_path' and 'demography_info' or 'predicted_label' and 'transcription' must be provided.")
 
-def initialize_model(config: Config, model_checkpoint: str) -> torch.nn.Module:
+def initialize_model(config: Dict[str, Any], model_checkpoint: str) -> torch.nn.Module:
     """
     Initialize the model wrapper and load the pretrained model.
 
     Args:
-        config (Config): Configuration object for the model.
+        config (Dict[str, Any]): Configuration dictionary for the model.
         model_checkpoint (str): Path to the model checkpoint.
 
     Returns:
@@ -66,32 +67,21 @@ def initialize_model(config: Config, model_checkpoint: str) -> torch.nn.Module:
     model = wrapper.get_model(model_checkpoint)
     return model
 
-def get_model_config() -> Config:
+def load_config_from_yaml(config_path: str) -> Dict[str, Any]:
     """
-    Create and configure the model configuration.
+    Load model configuration from a YAML file.
+
+    Args:
+        config_path (str): Path to the YAML configuration file.
 
     Returns:
-        Config: Configured model configuration.
+        Dict[str, Any]: Configuration dictionary.
     """
-    config = Config()
-    config.seed = 133
-    config.bs = 4
-    config.epochs = 14
-    config.lr = 1e-6
-    config.hidden_size = 128
-    config.wd = 1e-3
-    config.integration = 16  # SIMPLE_ATTENTION
-    config.num_labels = 3
-    config.txt_transformer_chp = config.MGTEBASE
-    config.speech_transformer_chp = config.mHuBERT
-    config.segment_size = 5
-    config.active_layers = 12
-    config.demography = 'age_bin'
-    config.demography_hidden_size = 128
-    config.max_num_segments = 7
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
     return config
 
-def run_inference(model: torch.nn.Module, audio_path: str, demography_info: float, config: Config) -> Tuple[int, str]:
+def run_inference(model: torch.nn.Module, audio_path: str, demography_info: float, config: Dict[str, Any]) -> Tuple[int, str]:
     """
     Run inference to get predicted_label and transcription.
 
@@ -99,7 +89,7 @@ def run_inference(model: torch.nn.Module, audio_path: str, demography_info: floa
         model (torch.nn.Module): Loaded model.
         audio_path (str): Path to the audio file.
         demography_info (float): Demographic information.
-        config (Config): Model configuration.
+        config (Dict[str, Any]): Model configuration.
 
     Returns:
         Tuple[int, str]: Predicted label and transcription.
@@ -115,8 +105,9 @@ def main() -> None:
     # Validate arguments
     validate_arguments(args)
 
-    # Initialize model configuration
-    config = get_model_config()
+    # Load model configuration from YAML file
+    config_path = "SpeechCARE_Linguistic_Explainability_Framework/data/model_config.yaml"  # Path to your YAML configuration file
+    config = Config(load_config_from_yaml(config_path))
 
     # Initialize and load the model
     model = initialize_model(config, args.model_checkpoint)

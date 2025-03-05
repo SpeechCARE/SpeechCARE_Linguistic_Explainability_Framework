@@ -1,0 +1,23 @@
+model_checkpoints:
+  HUBERT: "facebook/hubert-base-ls960"
+  WAV2VEC2: "facebook/wav2vec2-base-960h"
+  mHuBERT: "utter-project/mHuBERT-147"
+  MGTEBASE: "Alibaba-NLP/gte-multilingual-base"
+  WHISPER: "openai/whisper-large-v3-turbo"
+
+config:
+  seed: 133
+  bs: 4
+  epochs: 14
+  lr: 1e-6
+  hidden_size: 128
+  wd: 1e-3
+  integration: 16
+  num_labels: 3
+  txt_transformer_chp: "Alibaba-NLP/gte-multilingual-base"
+  speech_transformer_chp: "utter-project/mHuBERT-147"
+  segment_size: 5
+  active_layers: 12
+  demography: "age_bin"
+  demography_hidden_size: 128
+  max_num_segments: 7
