@@ -16,7 +16,6 @@ class Config:
         self.bs = config_dict['config']['bs']
         self.integration = config_dict['config']['integration']
         self.hidden_size = config_dict['config']['hidden_size']
-        self.dropout = config_dict['config']['dropout']
         self.active_layers = config_dict['config']['active_layers']
         self.num_labels = config_dict['config']['num_labels']
         self.demography = config_dict['config']['demography']
@@ -24,6 +23,7 @@ class Config:
         self.demography_hidden_size = config_dict['config']['demography_hidden_size']
         self.txt_transformer_chp = config_dict['config']['txt_transformer_chp']
         self.speech_transformer_chp = config_dict['config']['speech_transformer_chp']
+        self.max_num_segments = config_dict['config']['max_num_segments']
 
     def get_subnet_insize(self):
         if self.transformer_checkpoint == self.HUBERT:
