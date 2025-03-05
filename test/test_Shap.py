@@ -5,7 +5,6 @@ import torch
 # Add custom paths to sys.path (if needed)
 sys.path.append("")
 
-
 from SpeechCARE_Linguistic_Explainability_Framework.SHAP.Shap import LinguisticShap
 from SpeechCARE_Linguistic_Explainability_Framework.models.ModelWrapper import ModelWrapper
 from SpeechCARE_Linguistic_Explainability_Framework.Config import Config
@@ -28,7 +27,12 @@ def parse_arguments():
                         help="Path to the audio file of the selected sample.")
     
     # Optional arguments
-  
+    parser.add_argument("--predicted_label", type=int, default=None,
+                        help="Precomputed predicted label (optional).")
+    parser.add_argument("--transcription", type=str, default=None,
+                        help="Precomputed transcription (optional).")
+    parser.add_argument("--save_path", type=str, default=None,
+                        help="Path to save the results (optional).")
 
     return parser.parse_args()
 
@@ -47,15 +51,11 @@ def initialize_model(config, model_checkpoint):
     model = wrapper.get_model(model_checkpoint)
     return model
 
-
-
 def main():
     # Parse command-line arguments
     args = parse_arguments()
 
-    config = Config()
     # Initialize model configuration
-    SIMPLE_ATTENTION = 16
     config = Config()
     config.seed = 133
     config.bs = 4
@@ -63,7 +63,7 @@ def main():
     config.lr = 1e-6
     config.hidden_size = 128
     config.wd = 1e-3
-    config.integration = SIMPLE_ATTENTION
+    config.integration = 16  # SIMPLE_ATTENTION
     config.num_labels = 3
     config.txt_transformer_chp = config.MGTEBASE
     config.speech_transformer_chp = config.mHuBERT
@@ -72,24 +72,25 @@ def main():
     config.demography = 'age_bin'
     config.demography_hidden_size = 128
     config.max_num_segments = 7
+
     # Initialize and load the model
     model = initialize_model(config, args.model_checkpoint)
 
-    # Run inference to get transcription and predicted_label for the model or set them manually
-    demography_tensor = torch.tensor(args.demography_info, dtype=torch.float16).reshape(1, 1) # Convert demographic information to a tensor
-    predicted_label , _ = model.inference(args.audio_path, demography_tensor, config)
+    # Check if predicted_label and transcription are provided in arguments
+    if args.predicted_label is not None and args.transcription is not None:
+        model.predicted_label = args.predicted_label
+        model.transcription = args.transcription
+        print("Using provided predicted_label and transcription.")
+    else:
+        # Run inference to get predicted_label and transcription
+        demography_tensor = torch.tensor(args.demography_info, dtype=torch.float16).reshape(1, 1)
+        predicted_label, _ = model.inference(args.audio_path, demography_tensor, config)
+        print("Running inference to compute predicted_label and transcription.")
 
-    print(type(predicted_label))
-    print((predicted_label.shape))
-    transcription = model.transcription #save
-    print(type(transcription))
-
-
-    # Initialize SHAP explainer
-    # shap = LinguisticShap(model)
-    # html_result = shap.get_text_shap_results()
-
-
+   
+    # Initialize SHAP explainer (if needed)
+    shap = LinguisticShap(model)
+    html_result = shap.get_text_shap_results(args.save_path)
 
 if __name__ == "__main__":
     main()

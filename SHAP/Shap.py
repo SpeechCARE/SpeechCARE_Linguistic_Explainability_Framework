@@ -51,16 +51,37 @@ class LinguisticShap():
 
         return new_scores
     
-    def get_text_shap_results(self):
-        print('Running shap values...')
-        input_text = [str(self.model.transcription)]
-        print('input text:',input_text)
+    def get_text_shap_results(self, file_name= None):
+        """
+        Generate SHAP values for the model's transcription and save the results as an HTML file.
+
+        Args:
+            file_name (str): The name of the file to save the HTML output.
+
+        Returns:
+            str: The generated HTML code.
+        """
+        print('Running SHAP values...')
         
+        # Prepare input text
+        input_text = [str(self.model.transcription)]
+        print('Input text:', input_text)
+        
+        # Compute SHAP values
         shap_values = self.text_explainer(input_text)
         print('Values explained...')
-        shap_html_code = text(shap_values[:,:,self.model.predicted_label], display=False)
+        
+        # Generate HTML code
+        shap_html_code = text(shap_values[:, :, self.model.predicted_label], display=False)
+        
+        if file_name:
+            # Save HTML code to file
+            with open(file_name, 'w', encoding='utf-8') as file:
+                file.write(shap_html_code)
+            print(f"SHAP results saved to {file_name}")
+            
         return shap_html_code
-    
+
     def get_text_shap_dict(self, grouping_threshold=0.01, separator=" "):
         """
         Returns a dictionary of token -> SHAP value for the model's current transcription
