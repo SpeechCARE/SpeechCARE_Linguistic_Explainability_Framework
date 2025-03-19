@@ -1,14 +1,12 @@
-# Model Explainability for Text Inputs
+# Linguistic Explainability Framework
 
-This repository implements a **transformer-based classification pipeline** for analyzing and interpreting text inputs. To enhance interpretability, we provide tools to explain the model's decision-making process using methods such as **SHAP (SHapley Additive exPlanations)**. These methods allow us to identify and visualize the specific words, phrases, or tokens in the text that the model attends to most when making predictions. Whether you're working on sentiment analysis, text classification, or any other NLP task, this repository aims to make your model's decisions more transparent and interpretable.
+This repository offers a model-agnostic explainability framework for linguistic deep learning pipelines. It integrates human-interpretable techniques, such as SHAP (SHapley Additive exPlanations), to visualize linguistic cues associated with desired model outcomes (e.g., cognitive impairment). Additionally, it leverages state-of-the-art large language models (LLMs) to provide deeper interpretability and insights.
 
-## 🚀 Installation
+The framework also includes acoustic explainability. For more details, refer to the [Acoustic Explainability Framework repository](https://github.com/SpeechCARE/SpeechCARE_Acoustic_Explainability_Framework.git).
 
-First, install the required dependencies using the `requirements.txt` file:
+Below is a sample output of our linguistic explainability framework applied to a classification task from the [SpeechCARE challenge](https://github.com/SpeechCARE), where the subject's class was Mild Cognitive Impairment (MCI).
 
-```bash
-pip install -r requirements.txt
-```
+![Example Output](figs/SHAP_qnvo.png)
 
 ---
 
@@ -21,18 +19,7 @@ Before starting the training process, update the **`data/model_config.yml`** fil
 Choose a pretrained acoustic transformer model by specifying its checkpoint in the configuration file. The pipeline supports various self-supervised speech models:
 
 ```yaml
-# mHuBERT: Multilingual HuBERT model for robust speech representation learning
-speech_transformer_chp: "utter-project/mHuBERT-147"
-```
-
-```yaml
-# wav2vec 2.0: Self-supervised model trained on 960 hours of English speech
-speech_transformer_chp: "facebook/wav2vec2-base-960h"
-```
-
-```yaml
-# HuBERT: Hidden-unit BERT model trained on the LibriSpeech 960h dataset
-speech_transformer_chp: "facebook/hubert-base-ls960"
+txt_transformer_chp: "PATH/TO/PRETRAINED/MODEL/CHECKPOINTS"
 ```
 
 ### ✅ Set Training Hyperparameters
@@ -71,11 +58,24 @@ Use the following command to run the `test_Shap.py` file:
 - **`--save_path`**:  
   Path to save the generated .html file with SHAP values visualized. This file highlights the parts of the text signal that the model attended to most.
 
+---
+
+## 🚀 Installation
+
+You can install the required dependencies using the `requirements.txt` file:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
 ## 📁 Repository Structure
 
 ```
 ├── data/                       # Contains necessary data
 ├── dataset/                    # Dataset architecture
+├── Llama/                    # Contains methods to use Llama for interpreting the results
 ├── models/                      # Model architecture
 ├── utils/                      # Utility scripts for preprocessing and evaluation
 ├── test/                 # A sample script for using the explanation on text data
