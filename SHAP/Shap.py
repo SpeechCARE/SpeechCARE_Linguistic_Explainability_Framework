@@ -79,7 +79,7 @@ class LinguisticShap():
                 file.write(shap_html_code)
             print(f"SHAP results saved to {file_name}")
             
-        return shap_html_code
+        return shap_values, shap_html_code
 
     def get_text_shap_dict(self, grouping_threshold=0.01, separator=" "):
         """
