@@ -1,4 +1,6 @@
 import torch
+import yaml
+from typing import Dict, Any
 
 def report(text, space = False):
     print(text)
@@ -8,3 +10,17 @@ def free_gpu_memory():
     import gc
     gc.collect()
     torch.cuda.empty_cache()
+
+def load_yaml_file(config_path: str) -> Dict[str, Any]:
+    """
+    Load model configuration from a YAML file.
+
+    Args:
+        config_path (str): Path to the YAML configuration file.
+
+    Returns:
+        Dict[str, Any]: Configuration dictionary.
+    """
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
