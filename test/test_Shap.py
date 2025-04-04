@@ -77,7 +77,7 @@ def main() -> None:
     else:
         # Run inference to get predicted_label and transcription
         demography_tensor = torch.tensor(args.demography_info, dtype=torch.float16).reshape(1, 1)
-        model.predicted_label, model.transcription = model.inference(model, args.audio_path, demography_tensor, config)
+        model.inference(model, args.audio_path, demography_tensor, config)
         print("Running inference to compute predicted_label and transcription.")
 
     # Initialize SHAP explainer (if needed)
