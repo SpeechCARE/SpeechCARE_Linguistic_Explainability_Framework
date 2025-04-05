@@ -28,6 +28,7 @@ def format_shap_values(shap_explanation):
         token_value_pairs.append((token_str, shap_value))
     
     return token_value_pairs
+
 def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], hf_token: str) -> str:
     """
     Analyzes linguistic features and SHAP values to detect cognitive impairment patterns.
@@ -113,15 +114,10 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
         Output should be structured as **bullet points**, with each bullet clearly describing one key aspect of the analysis. 
         """.format(text=transcription, shap_values=json.dumps(format_shap_values(shap_values), indent=2))
 
-    
-    # Initialize text streamer for real-time output
-    streamer = TextStreamer(tokenizer)
-    
-    # Tokenize inputs and move to model device
     inputs = tokenizer(system_prompt, return_tensors="pt").to(model.device)
     input_ids = inputs["input_ids"]
-    
-    # Generate text with streaming capability
+
+    # Generate text
     with torch.inference_mode():
         outputs = model.generate(
             **inputs,
@@ -130,12 +126,15 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
             temperature=0.9,
             top_p=1,
             eos_token_id=tokenizer.eos_token_id,
-            streamer=streamer,
         )
-    
-    # Decode only the newly generated tokens
+
+    # Get only the newly generated tokens (after the input prompt)
     new_tokens = outputs[0][input_ids.shape[1]:]
-    return tokenizer.decode(new_tokens, skip_special_tokens=True)
+
+    # Decode only the new tokens
+    generated_text = tokenizer.decode(new_tokens, skip_special_tokens=True)
+    return generated_text
+    
 
 def generate_prediction(model, tokenizer, analysis_text: str) -> str:
     """
