@@ -3,7 +3,16 @@ from typing import Dict, List, Union
 from unsloth import FastLanguageModel
 from transformers import TextStreamer, pipeline
 import torch
+import numpy as np
 
+def format_shap_values(shap_explanation):
+    """Convert SHAP Explanation object to JSON-serializable format"""
+    return {
+        "values": shap_explanation.values.tolist(),  # Convert numpy array to list
+        "base_values": shap_explanation.base_values.tolist(),
+        "data": [x.tolist() if isinstance(x, np.ndarray) else str(x) 
+                for x in shap_explanation.data]
+    }
 def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], hf_token: str) -> str:
     """
     Analyzes linguistic features and SHAP values to detect cognitive impairment patterns.
@@ -58,6 +67,8 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
     Returns:
         str: The generated analysis text
     """
+    shap_serializable = format_shap_values(shap_values)
+
     # Prepare the system prompt with the provided inputs
     system_prompt = """
         You are a specialized language model trained to detect linguistic cues of cognitive impairment. You will receive:
@@ -86,7 +97,7 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
         Synthesize the significance of these tokens/features to explain how they collectively point to healthy cognition or potential cognitive impairment.
         Ensure that the explanations are concise, insightful, and relevant to cognitive impairment assessment.
         Output should be structured as **bullet points**, with each bullet clearly describing one key aspect of the analysis. 
-        """.format(text=transcription, shap_values=json.dumps(shap_values, indent=2))
+        """.format(text=transcription, shap_values=json.dumps(shap_serializable, indent=2))
 
     
     # Initialize text streamer for real-time output
