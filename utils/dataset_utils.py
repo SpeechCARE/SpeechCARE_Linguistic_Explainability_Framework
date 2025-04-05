@@ -3,6 +3,7 @@ import torchaudio
 import torchaudio.transforms as transforms 
 
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+from sklearn.preprocessing import OneHotEncoder
 
 import os
 import numpy as np
@@ -167,6 +168,22 @@ def preprocess_age_bin(df):
     df['age_bin'] = pd.cut(df['age'], bins=age_bins, labels=bin_labels, right=False)
     return df
 
+
+def demographic_to_tensor(
+    value: str,
+    categories: list = ["40-65", "66-80", "+80"],
+    dtype: torch.dtype = torch.float16
+) -> torch.Tensor:
+    try:
+        index = categories.index(value)
+    except ValueError:
+        raise ValueError(f"Value '{value}' not in allowed categories: {categories}")
+    
+    one_hot = [0.] * len(categories)
+    one_hot[index] = 1.
+    return torch.tensor([one_hot], dtype=dtype)
+
+# Usage remains the same
 
 def prepare_df(df: pd.DataFrame, 
                root_dir: str, 
