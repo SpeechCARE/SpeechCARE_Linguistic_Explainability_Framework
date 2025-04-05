@@ -93,6 +93,8 @@ def lowpass(waveform, sampling_rate, cutoff_freq=3000, order=5):
     return filtered_waveform
 
 def lpfilter_audio_files(audio_path, output_dir):
+    assert audio_path is not None, "File path cannot be None"
+    assert os.path.exists(audio_path), f"File not found: {audio_path}"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, audio_path.split("/")[-1].split(".")[0] + ".wav")
     try:
@@ -127,6 +129,9 @@ def get_whisper_model():
     return pipe
 
 def get_whisper_transcription_and_lang(audio_path, pipe):
+
+    assert audio_path is not None, "File path cannot be None"
+    assert os.path.exists(audio_path), f"File not found: {audio_path}"
 
     # Load and resample audio
     audio, sr = torchaudio.load(audio_path)
