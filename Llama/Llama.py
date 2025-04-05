@@ -156,22 +156,22 @@ def generate_prediction(model, tokenizer, analysis_text: str) -> str:
     ---
     {analysis_text}
     """
-    text_streamer = TextStreamer(tokenizer)
-    
-    # Initialize pipeline for cleaner generation
-    pipe = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        device_map='auto',
-        max_new_tokens=512, 
-        streamer=text_streamer
-    )
+    # Tokenize inputs and move to model device
+    inputs = tokenizer(system_prompt, return_tensors="pt").to(model.device)
+    input_ids = inputs["input_ids"]
 
-    # Generate text with more controlled parameters
-    result = pipe(
-        system_prompt,
-    )
-    
-    return result[0]['generated_text']
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=300,
+            do_sample=True,
+            temperature=0.7,  # Lower for more focused output
+            top_p=0.9,
+            pad_token_id=tokenizer.eos_token_id
+        )
 
+     # Decode only the newly generated tokens
+    new_tokens = outputs[0][input_ids.shape[1]:]
+    return tokenizer.decode(new_tokens, skip_special_tokens=True)
+
+ 
