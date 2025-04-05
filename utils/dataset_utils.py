@@ -169,21 +169,7 @@ def preprocess_age_bin(df):
     return df
 
 
-def demographic_to_tensor(
-    value: str,
-    categories: list = ["40-65", "66-80", "+80"],
-    dtype: torch.dtype = torch.float16
-) -> torch.Tensor:
-    try:
-        index = categories.index(value)
-    except ValueError:
-        raise ValueError(f"Value '{value}' not in allowed categories: {categories}")
-    
-    one_hot = [0.] * len(categories)
-    one_hot[index] = 1.
-    return torch.tensor([one_hot], dtype=dtype)
 
-# Usage remains the same
 
 def prepare_df(df: pd.DataFrame, 
                root_dir: str, 
