@@ -36,5 +36,4 @@ def get_audio_path(uid: str, audio_dir: str, format:str = '.wav') -> str:
         Full path to audio file (e.g., '/path/to/audio_dir/uid.mp3')
     """
     audio_file = f"{uid}{format}"
-    print(os.path.join(audio_dir, audio_file))
     return os.path.join(audio_dir, audio_file)

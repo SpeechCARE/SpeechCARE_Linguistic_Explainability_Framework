@@ -101,6 +101,7 @@ def lpfilter_audio_files(audio_path, output_dir):
         noisy, sr = torchaudio.load(audio_path)
         filtered_waveform = torch.tensor(lowpass(noisy, sr, 8000, 5))
         torchaudio.save(output_path, filtered_waveform, sr)
+        return output_path
     except Exception as e:
         print(f"Error processing {audio_path}: {e}")
 
