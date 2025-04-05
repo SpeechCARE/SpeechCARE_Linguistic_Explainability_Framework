@@ -101,6 +101,7 @@ def lpfilter_audio_files(audio_path, output_dir):
         noisy, sr = torchaudio.load(audio_path)
         filtered_waveform = torch.tensor(lowpass(noisy, sr, 8000, 5))
         torchaudio.save(output_path, filtered_waveform, sr)
+        print(f"Successfully processing {audio_path}")
         return output_path
     except Exception as e:
         print(f"Error processing {audio_path}: {e}")
@@ -207,7 +208,7 @@ def prepare_df(df: pd.DataFrame,
     os.makedirs(output_dir, exist_ok=True)
     df['processed_audio_path'] = df['path'].apply(
         lambda x: lpfilter_audio_files(x, output_dir))
-    
+    print(df['processed_audio_path'] )
     # 4. Add age bins
     df = preprocess_age_bin(df)
     
