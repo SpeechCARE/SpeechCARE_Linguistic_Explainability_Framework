@@ -40,9 +40,7 @@ def initialize_model(hf_token):
         dtype=torch.float16,
         load_in_4bit=True,
         token=hf_token,
-        cache_dir="/workspace",
-        llm_int8_enable_fp32_cpu_offload=True,  # Critical for offloading
-        device_map="auto"  # Automatically handles CPU/GPU distribution
+        cache_dir="/workspace"
     )
     FastLanguageModel.for_inference(model)  # Enable native 2x faster inference
     return model, tokenizer
