@@ -17,7 +17,7 @@ def format_shap_values(shap_explanation):
     """
     # Get tokens and values
     tokens = np.array(shap_explanation.data[0])  # Convert to numpy array if not already
-    values = shap_explanation.values.squeeze(0)
+    values = shap_explanation.values
         
     # Create (token, value) pairs
     token_value_pairs = []
@@ -29,7 +29,7 @@ def format_shap_values(shap_explanation):
     
     return token_value_pairs
 
-def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], hf_token: str) -> str:
+def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], hf_token: str,predicted_label:int) -> str:
     """
     Analyzes linguistic features and SHAP values to detect cognitive impairment patterns.
     
@@ -61,7 +61,7 @@ def initialize_model(hf_token):
     """
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name="unsloth/Llama-3.3-70B-Instruct",
-        max_seq_length=512,
+        max_seq_length=1024,
         dtype=torch.float16,
         load_in_4bit=True,
         token=hf_token,
