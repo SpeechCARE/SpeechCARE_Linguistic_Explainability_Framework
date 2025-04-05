@@ -11,7 +11,7 @@ import pandas as pd
 
 import scipy.signal as signal
 
-from Utils import get_audio_path
+from utils.Utils import get_audio_path
 
 def calculate_num_segments(audio_duration, segment_length, overlap, min_acceptable):
     """
