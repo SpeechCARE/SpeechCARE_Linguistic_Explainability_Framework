@@ -6,13 +6,28 @@ import torch
 import numpy as np
 
 def format_shap_values(shap_explanation):
-    """Convert SHAP Explanation object to JSON-serializable format"""
-    return {
-        "values": shap_explanation.values.tolist(),  # Convert numpy array to list
-        "base_values": shap_explanation.base_values.tolist(),
-        "data": [x.tolist() if isinstance(x, np.ndarray) else str(x) 
-                for x in shap_explanation.data]
-    }
+    """
+    Convert SHAP Explanation object to list of (token, SHAP value) pairs.
+    
+    Args:
+        shap_explanation: SHAP Explanation object
+        
+    Returns:
+        list: List of tuples in format (token, shap_value)
+    """
+    # Get tokens and values
+    tokens = np.array(shap_explanation.data[0])  # Convert to numpy array if not already
+    values = shap_explanation.values.squeeze(0)
+        
+    # Create (token, value) pairs
+    token_value_pairs = []
+    for token, value in zip(tokens, values):
+        token_str = str(token)
+        # Handle scalar values (single classification) or arrays (multi-class)
+        shap_value = float(value) if np.isscalar(value) else [float(v) for v in value]
+        token_value_pairs.append((token_str, shap_value))
+    
+    return token_value_pairs
 def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], hf_token: str) -> str:
     """
     Analyzes linguistic features and SHAP values to detect cognitive impairment patterns.
@@ -67,7 +82,6 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
     Returns:
         str: The generated analysis text
     """
-    shap_serializable = format_shap_values(shap_values)
 
     # Prepare the system prompt with the provided inputs
     system_prompt = """
@@ -97,7 +111,7 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
         Synthesize the significance of these tokens/features to explain how they collectively point to healthy cognition or potential cognitive impairment.
         Ensure that the explanations are concise, insightful, and relevant to cognitive impairment assessment.
         Output should be structured as **bullet points**, with each bullet clearly describing one key aspect of the analysis. 
-        """.format(text=transcription, shap_values=json.dumps(shap_serializable, indent=2))
+        """.format(text=transcription, shap_values=json.dumps(format_shap_values(shap_values), indent=2))
 
     
     # Initialize text streamer for real-time output
