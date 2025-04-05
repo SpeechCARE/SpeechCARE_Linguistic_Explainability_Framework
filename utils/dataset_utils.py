@@ -160,8 +160,8 @@ def get_whisper_transcription_and_lang(audio_path, pipe):
     return result['text']
 
 def preprocess_age_bin(df):
-    age_bins = [46, 65, 80, 100]
-    bin_labels = [46-65, 1, 2]
+    age_bins = [40, 66, 81, 100]
+    bin_labels = ["40-65", "66-80", "+80"]
 
     # Apply binning
     df['age_bin'] = pd.cut(df['age'], bins=age_bins, labels=bin_labels, right=False)

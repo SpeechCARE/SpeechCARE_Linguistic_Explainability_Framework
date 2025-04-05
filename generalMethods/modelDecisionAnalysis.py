@@ -275,7 +275,7 @@ def generate_prediction_report(model, audio_path, demography_info, config):
         <div class="container">
             <div class="header">
                 <h1>Model Decision Analysis</h1>
-                <p>Comprehensive breakdown for: {os.path.basename(audio_path)}</p>
+                <p style="text-align: center;" >Comprehensive breakdown for: {os.path.basename(audio_path)}</p>
                 <div class="theme-toggle" onclick="toggleTheme()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -335,7 +335,7 @@ def generate_prediction_report(model, audio_path, demography_info, config):
             
             <div class="audio-info">
                 <div class="detail-title">Information</div>
-                <p><strong>Age:</strong> {demography_info}</p>
+                <p><strong>Age category:</strong> {demography_info}</p>
                 
                 <div class="detail-title" style="margin-top: 20px;">Transcript Analysis</div>
                 <div class="transcription">{model.transcription or "No transcription available"}</div>
