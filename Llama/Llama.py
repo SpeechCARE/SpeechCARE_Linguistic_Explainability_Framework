@@ -121,7 +121,6 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
     with torch.inference_mode():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=512,
             do_sample=True,
             temperature=0.9,
             top_p=1,
@@ -162,7 +161,6 @@ def generate_prediction(model, tokenizer, analysis_text: str) -> str:
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=300,
             do_sample=True,
             temperature=0.7,  # Lower for more focused output
             top_p=0.9,
