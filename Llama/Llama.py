@@ -142,23 +142,21 @@ def generate_prediction(model, tokenizer, analysis_text: str) -> str:
     ---
     {analysis_text}
     """
+    text_streamer = TextStreamer(tokenizer)
     
     # Initialize pipeline for cleaner generation
     pipe = pipeline(
         "text-generation",
         model=model,
         tokenizer=tokenizer,
-        device=model.device,
+        device_map='auto',
+        max_new_tokens=512, 
+        streamer=text_streamer
     )
-    
+
     # Generate text with more controlled parameters
     result = pipe(
         system_prompt,
-        max_new_tokens=300,
-        do_sample=True,
-        temperature=0.7,  # Slightly lower temperature for more focused output
-        top_p=0.9,
-        eos_token_id=tokenizer.eos_token_id,
     )
     
     return result[0]['generated_text']
