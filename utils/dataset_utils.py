@@ -90,6 +90,7 @@ def lowpass(waveform, sampling_rate, cutoff_freq=3000, order=5):
     normalized_cutoff = cutoff_freq / nyquist
     b, a = signal.butter(order, normalized_cutoff, btype='low', analog=False)
     filtered_waveform = signal.lfilter(b, a, waveform, axis=1)
+    print("success")
     return filtered_waveform
 
 def lpfilter_audio_files(audio_path, output_dir):
@@ -99,7 +100,9 @@ def lpfilter_audio_files(audio_path, output_dir):
     output_path = os.path.join(output_dir, audio_path.split("/")[-1].split(".")[0] + ".wav")
     try:
         noisy, sr = torchaudio.load(audio_path)
+        print("here1")
         filtered_waveform = torch.tensor(lowpass(noisy, sr, 8000, 5))
+        print("here2")
         torchaudio.save(output_path, filtered_waveform, sr)
         print(f"Successfully processing {audio_path}")
         return output_path
@@ -203,9 +206,10 @@ def prepare_df(df: pd.DataFrame,
     
     # 2. Generate audio paths
     df['path'] = df['uid'].apply(lambda x: get_audio_path(x, root_dir, audio_format))
+
+    print(df['path'])
     
     # 3. Process audio files with low-pass filter
-    os.makedirs(output_dir, exist_ok=True)
     df['processed_audio_path'] = df['path'].apply(
         lambda x: lpfilter_audio_files(x, output_dir))
     print(df['processed_audio_path'] )
