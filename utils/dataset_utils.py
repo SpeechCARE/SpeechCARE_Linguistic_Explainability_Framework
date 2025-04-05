@@ -11,6 +11,7 @@ import pandas as pd
 
 import scipy.signal as signal
 
+from Utils import get_audio_path
 
 def calculate_num_segments(audio_duration, segment_length, overlap, min_acceptable):
     """
@@ -158,4 +159,55 @@ def preprocess_age_bin(df):
 
     # Apply binning
     df['age_bin'] = pd.cut(df['age'], bins=age_bins, labels=bin_labels, right=False)
+    return df
+
+
+def prepare_df(df: pd.DataFrame, 
+               root_dir: str, 
+               output_dir: str = "./processed_audio",
+               audio_format: str = '.wav') -> pd.DataFrame:
+    """
+    Prepares the dataframe by:
+    1. Validating required columns (uid, age)
+    2. Generating audio paths
+    3. Applying low-pass filtering to audio files
+    4. Adding age bins
+    5. Generating transcriptions
+    
+    Args:
+        df: Input dataframe with columns (uid, age) and optionally gender
+        root_dir: Root directory where audio files are stored
+        output_dir: Directory to save processed audio files (default: './processed_audio')
+        audio_format: Format of audio files (default: '.wav')
+        
+    Returns:
+        Processed dataframe with additional columns:
+        - audio_path: Path to original audio file
+        - processed_audio_path: Path to filtered audio file
+        - age_bin: Categorical age bin
+        - transcription: Whisper-generated transcription
+    """
+    
+    # 1. Validate required columns
+    required_columns = ['uid', 'age']
+    missing_cols = [col for col in required_columns if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Dataframe missing required columns: {missing_cols}")
+    
+    # 2. Generate audio paths
+    df['path'] = df['uid'].apply(lambda x: get_audio_path(x, root_dir, audio_format))
+    
+    # 3. Process audio files with low-pass filter
+    os.makedirs(output_dir, exist_ok=True)
+    df['processed_audio_path'] = df['path'].apply(
+        lambda x: lpfilter_audio_files(x, output_dir))
+    
+    # 4. Add age bins
+    df = preprocess_age_bin(df)
+    
+    # 5. Generate transcriptions (load model once for efficiency)
+    pipe = get_whisper_model()
+    df['transcription'] = df['processed_audio_path'].apply(
+        lambda x: get_whisper_transcription_and_lang(x, pipe))
+    
     return df
