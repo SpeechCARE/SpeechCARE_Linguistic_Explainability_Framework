@@ -1,9 +1,76 @@
 import json
 from typing import Dict, List, Union
 from unsloth import FastLanguageModel
-from transformers import TextStreamer, pipeline
 import torch
 import numpy as np
+from modelscope import AutoTokenizer
+from modelscope import AutoModelForCausalLM
+
+system_prompt1 = """
+    You are a specialized language model trained to detect linguistic cues of cognitive impairment. You will receive:
+    1) A set of linguistic features to consider.
+    2) A text passage to analyze.
+    3) Token-level SHAP values from a pre-trained model.
+    
+    ---
+    ## Linguistic Features to Consider:
+    • Lexical Richness: Unusual or varied vocabulary, overuse of vague terms (e.g., “thing,” “stuff”).
+    • Syntactic Complexity: Simple vs. complex sentence constructions, grammatical errors.
+    • Sentence Length and Structure: Fragmented vs. compound/complex sentences.
+    • Repetition: Repeated words, phrases, or clauses.
+    • Disfluencies and Fillers: Terms like “um,” “uh,” “like.”
+    • Semantic Coherence and Content: Logical flow of ideas, clarity of meaning.
+    • Additional Feature: Placeholder for any extra marker (e.g., specialized domain terms).
+    ---
+    ## Text to Analyze:
+    {text}
+    ---
+    ## Token-level SHAP Values:
+    {shap_values}
+    ---
+    You must analyze the given text and the shap values based on:
+    Synthesize the significance of provided tokens/features to explain how they collectively point to healthy cognition or potential cognitive impairment.
+    Ensure that the explanations are concise, insightful, and relevant to cognitive impairment assessment.
+    Output should be structured as **bullet points**, with each bullet clearly describing one key aspect of the analysis. 
+    ---
+    ## Analysis:
+    
+    """
+
+system_prompt2 = """
+    Based on the the long analysis of detecting cognitive impairment, provide the following:
+    Write the final prediction regarding the detection of cognitive impairment in **one short sentence**.
+    Summarize the key findings and their implications in **bullet points**, without using the "Title: description" format.
+    Do not provide any additional or extra explanations and points.
+    **Avoid saying anything about SHAP values and Giving Suggestions for further analysis**
+    **Do not repeat yourself**
+    ---
+    ## Long Analysis:
+    {generated_text}
+
+    ---
+    ## Final Prediction and Key findingd:
+    
+    """
+
+def apply_chat_template(template,tokenizer):
+    return tokenizer.apply_chat_template(template, tokenize=False)
+
+def prep_prompt_analysis(transcript, shap_values,tokenizer):
+    content = system_prompt1.format(text=transcript, shap_values=json.dumps(shap_values, indent=2))
+    messages = [{"role": "user", "content": content}]
+
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+    return prompt
+
+def prep_prompt_summarize(generated_text,tokenizer):
+    content = system_prompt2.format(generated_text=generated_text)
+    messages = [{"role": "user", "content": content}]
+
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+    return prompt
 
 def format_shap_values(shap_explanation):
     """
@@ -52,22 +119,16 @@ def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], h
     
     return analysis_text, final_prediction
 
-def initialize_model(hf_token):
+def initialize_model(model_path ='/workspace/models/llama70B'):
     """
     Initializes and returns the language model and tokenizer with optimized settings.
     
     Returns:
         tuple: (model, tokenizer) pair for text generation
     """
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name="unsloth/Llama-3.3-70B-Instruct",
-        max_seq_length=4096,
-        dtype=torch.float16,
-        load_in_4bit=True,
-        token=hf_token,
-        cache_dir="/workspace"
-    )
-    FastLanguageModel.for_inference(model)  # Enable native 2x faster inference
+    model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map='auto', trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+   
     return model, tokenizer
 
 def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[Dict, List]) -> str:
@@ -84,43 +145,15 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
         str: The generated analysis text
     """
 
-    # Prepare the system prompt with the provided inputs
-    system_prompt = """
-        You are a specialized language model trained to detect linguistic cues of cognitive impairment. You will receive:
-        1) A set of linguistic features to consider.
-        
-        2) A text passage to analyze.
-        3) Token-level SHAP values from a pre-trained model.
-        ---
-        Linguistic Features to Consider:
-        • Lexical Richness: Unusual or varied vocabulary, overuse of vague terms (e.g., “thing,” “stuff”).
-        • Syntactic Complexity: Simple vs. complex sentence constructions, grammatical errors.
-        • Sentence Length and Structure: Fragmented vs. compound/complex sentences.
-        • Repetition: Repeated words, phrases, or clauses.
-        • Disfluencies and Fillers: Terms like “um,” “uh,” “like.”
-        • Semantic Coherence and Content: Logical flow of ideas, clarity of meaning.
-        • Additional Feature: Placeholder for any extra marker (e.g., specialized domain terms).
-        ---
-        Text to Analyze:
-        {text}
-        ---
-        Token-level SHAP Values:
-        {shap_values}
-        ---
-        
-        Analysis Format:
-        Synthesize the significance of these tokens/features to explain how they collectively point to healthy cognition or potential cognitive impairment.
-        Ensure that the explanations are concise, insightful, and relevant to cognitive impairment assessment.
-        Output should be structured as **bullet points**, with each bullet clearly describing one key aspect of the analysis. 
-        """.format(text=transcription, shap_values=json.dumps(format_shap_values(shap_values), indent=2))
-
-    inputs = tokenizer(system_prompt, return_tensors="pt").to(model.device)
-    input_ids = inputs["input_ids"]
+    prompt = system_prompt1.format(text=transcription, shap_values=json.dumps(shap_values, indent=2))
+    inputs1 = tokenizer(prompt, return_tensors="pt").to(model.device)
+    input_ids1 = inputs1["input_ids"]
 
     # Generate text
     with torch.inference_mode():
-        outputs = model.generate(
-            **inputs,
+        outputs1 = model.generate(
+            **inputs1,
+            max_new_tokens=512,
             do_sample=True,
             temperature=0.9,
             top_p=1,
@@ -128,11 +161,11 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
         )
 
     # Get only the newly generated tokens (after the input prompt)
-    new_tokens = outputs[0][input_ids.shape[1]:]
+    new_tokens1 = outputs1[0][input_ids1.shape[1]:]
 
     # Decode only the new tokens
-    generated_text = tokenizer.decode(new_tokens, skip_special_tokens=True)
-    return generated_text
+    generated_text1 = tokenizer.decode(new_tokens1, skip_special_tokens=True)
+    return generated_text1
     
 
 def generate_prediction(model, tokenizer, analysis_text: str) -> str:
@@ -147,28 +180,28 @@ def generate_prediction(model, tokenizer, analysis_text: str) -> str:
     Returns:
         str: The final prediction and summary
     """
-    system_prompt = f"""
-    Based on the analysis of detecting cognitive impairment, provide the following:
-    Write the final prediction regarding the detection of cognitive impairment in **one short sentence**.
-    Summarize the key findings and their implications in **bullet points**, without using the "Title: description" format.
-    ---
-    {analysis_text}
-    """
-    # Tokenize inputs and move to model device
-    inputs = tokenizer(system_prompt, return_tensors="pt").to(model.device)
-    input_ids = inputs["input_ids"]
+    prompt2 = prep_prompt_summarize(analysis_text)
 
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
+    # Tokenize
+    inputs2 = tokenizer(prompt2, return_tensors="pt").to(model.device)
+    input_ids2 = inputs2["input_ids"]
+
+    # Generate text
+    with torch.inference_mode():
+        outputs2 = model.generate(
+            **inputs2,
+            max_new_tokens=200,
             do_sample=True,
-            temperature=0.7,  # Lower for more focused output
-            top_p=0.9,
-            pad_token_id=tokenizer.eos_token_id
+            temperature=0.1,
+            top_p=1,
+            eos_token_id=tokenizer.eos_token_id,
         )
 
-     # Decode only the newly generated tokens
-    new_tokens = outputs[0][input_ids.shape[1]:]
-    return tokenizer.decode(new_tokens, skip_special_tokens=True)
+    # Get only the newly generated tokens (after the input prompt)
+    new_tokens2 = outputs2[0][input_ids2.shape[1]:]
+
+    # Decode only the new tokens
+    generated_text2 = tokenizer.decode(new_tokens2, skip_special_tokens=True)
+    return generated_text2
 
  
