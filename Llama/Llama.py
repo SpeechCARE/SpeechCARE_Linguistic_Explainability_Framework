@@ -52,6 +52,13 @@ system_prompt2 = """
     ## Final Prediction and Key findingd:
     
     """
+def get_pairs(tokens, shaps, index):
+    list_of_pairs = []
+    for token, shap in zip(tokens, shaps):
+        list_of_pairs.append([token, shap[index] if shap[index] > 0 else None])
+    return list_of_pairs
+
+
 
 def apply_chat_template(template,tokenizer):
     return tokenizer.apply_chat_template(template, tokenize=False)
@@ -131,7 +138,7 @@ def initialize_model(model_path ='/workspace/models/llama70B'):
    
     return model, tokenizer
 
-def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[Dict, List]) -> str:
+def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[Dict, List],shap_index:int) -> str:
     """
     Generates the initial linguistic analysis using the provided transcription and SHAP values.
     
@@ -144,8 +151,9 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
     Returns:
         str: The generated analysis text
     """
+    token_shap_pairs = get_pairs(shap_values.tokens, shap_values.shap_values, shap_index)
 
-    prompt = system_prompt1.format(text=transcription, shap_values=json.dumps(shap_values, indent=2))
+    prompt = system_prompt1.format(text=transcription, shap_values=json.dumps(token_shap_pairs, indent=2))
     inputs1 = tokenizer(prompt, return_tensors="pt").to(model.device)
     input_ids1 = inputs1["input_ids"]
 
