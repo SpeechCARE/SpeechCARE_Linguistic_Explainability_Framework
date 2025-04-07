@@ -151,7 +151,8 @@ def generate_analysis(model, tokenizer, transcription: str, shap_values: Union[D
     Returns:
         str: The generated analysis text
     """
-    token_shap_pairs = get_pairs(shap_values.data[0], shap_values.values, shap_index)
+    shap_values.values = shap_values[0,:,shap_index]
+    token_shap_pairs = format_shap_values(shap_values) 
 
     prompt = system_prompt1.format(text=transcription, shap_values=json.dumps(token_shap_pairs, indent=2))
     inputs1 = tokenizer(prompt, return_tensors="pt").to(model.device)
