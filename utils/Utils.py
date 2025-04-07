@@ -5,6 +5,8 @@ import os
 import importlib.metadata
 import subprocess
 
+import sys
+from typing import Dict, Optional
 # Dictionary of required packages and versions
 required_versions = {
     'torch': '2.4.1',
@@ -19,33 +21,62 @@ required_versions = {
     'transformers': '4.36.2'
 }
 
-def check_and_install_packages():
+
+def check_and_install_packages(required_versions: Dict[str, Optional[str]]):
+    """Check and install packages with individual installation attempts."""
     to_install = []
     
+    # First check all versions
     for package, required_version in required_versions.items():
         try:
             installed_version = importlib.metadata.version(package)
             
             if required_version and installed_version != required_version:
                 print(f"❌ {package} version mismatch (installed: {installed_version}, required: {required_version})")
-                to_install.append(f"{package}=={required_version}")
+                to_install.append((package, required_version))
             else:
                 print(f"✅ {package} version correct ({installed_version})")
                 
         except importlib.metadata.PackageNotFoundError:
             print(f"❌ {package} not installed")
-            if required_version:
-                to_install.append(f"{package}=={required_version}")
-            else:
-                to_install.append(package)
+            to_install.append((package, required_version))
     
-    if to_install:
-        print("\nInstalling missing/incorrect packages...")
-        install_command = ["pip", "install", "--force-reinstall", "-q"] + to_install
-        subprocess.run(install_command, check=True)
-        print("Installation complete. Please restart your runtime/kernel!")
-    else:
+    if not to_install:
         print("\nAll packages are correctly installed!")
+        return
+    
+    print("\nInstalling missing/incorrect packages...")
+    
+    # Install packages one by one with error handling
+    for package, version in to_install:
+        try:
+            package_spec = f"{package}=={version}" if version else package
+            print(f"Installing {package_spec}...")
+            
+            # Base command
+            cmd = [sys.executable, "-m", "pip", "install", "--force-reinstall"]
+            
+            # Add CUDA index URL for torch packages
+            # if package in ['torch', 'torchvision', 'torchaudio']:
+                # cmd.extend(["--index-url", "https://download.pytorch.org/whl/cu124"])
+            
+            cmd.append(package_spec)
+            
+            subprocess.run(cmd, check=True)
+            print(f"Successfully installed {package_spec}")
+            
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install {package_spec}: {e}")
+            print("Trying with --no-deps as fallback...")
+            try:
+                subprocess.run(cmd + ["--no-deps"], check=True)
+                print(f"Installed {package_spec} with --no-deps")
+            except subprocess.CalledProcessError:
+                print(f"❌ Critical: Failed to install {package_spec} even with --no-deps")
+    
+    print("\nInstallation attempts complete. Some packages may need manual installation.")
+    print("Please restart your runtime/kernel if any packages were installed!")
+
 def report(text, space = False):
     print(text)
     if space: print('-' * 50)
