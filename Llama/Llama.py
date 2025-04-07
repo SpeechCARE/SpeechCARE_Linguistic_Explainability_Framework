@@ -103,7 +103,7 @@ def format_shap_values(shap_explanation):
     
     return token_value_pairs
 
-def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], hf_token: str) -> str:
+def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List]) -> str:
     """
     Analyzes linguistic features and SHAP values to detect cognitive impairment patterns.
     
@@ -116,7 +116,7 @@ def get_llm_interpretation(transcription: str, shap_values: Union[Dict, List], h
         str: The final analysis and prediction regarding cognitive impairment.
     """
     # Initialize model and tokenizer
-    model, tokenizer = initialize_model(hf_token)
+    model, tokenizer = initialize_model()
     
     # Generate initial analysis
     analysis_text = generate_analysis(model, tokenizer, transcription, shap_values)
