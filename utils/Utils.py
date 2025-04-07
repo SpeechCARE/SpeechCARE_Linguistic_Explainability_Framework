@@ -2,6 +2,50 @@ import torch
 import yaml
 from typing import Dict, Any
 import os
+import importlib.metadata
+import subprocess
+
+# Dictionary of required packages and versions
+required_versions = {
+    'torch': '2.4.1',
+    'torchvision': '0.19.1',
+    'torchaudio': '2.4.1',
+    'xformers': '0.0.25',
+    'unsloth': None,  # None means just check if installed
+    'accelerate': None,  # Will check latest compatible version
+    'huggingface_hub': None,
+    'sentence-transformers': '2.7.0',
+    'numpy': '1.24.0',
+    'transformers': '4.36.2'
+}
+
+def check_and_install_packages():
+    to_install = []
+    
+    for package, required_version in required_versions.items():
+        try:
+            installed_version = importlib.metadata.version(package)
+            
+            if required_version and installed_version != required_version:
+                print(f"❌ {package} version mismatch (installed: {installed_version}, required: {required_version})")
+                to_install.append(f"{package}=={required_version}")
+            else:
+                print(f"✅ {package} version correct ({installed_version})")
+                
+        except importlib.metadata.PackageNotFoundError:
+            print(f"❌ {package} not installed")
+            if required_version:
+                to_install.append(f"{package}=={required_version}")
+            else:
+                to_install.append(package)
+    
+    if to_install:
+        print("\nInstalling missing/incorrect packages...")
+        install_command = ["pip", "install", "--force-reinstall", "-q"] + to_install
+        subprocess.run(install_command, check=True)
+        print("Installation complete. Please restart your runtime/kernel!")
+    else:
+        print("\nAll packages are correctly installed!")
 def report(text, space = False):
     print(text)
     if space: print('-' * 50)
