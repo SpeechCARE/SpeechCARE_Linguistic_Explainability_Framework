@@ -189,7 +189,7 @@ def generate_prediction(model, tokenizer, analysis_text: str) -> str:
     Returns:
         str: The final prediction and summary
     """
-    prompt2 = prep_prompt_summarize(analysis_text)
+    prompt2 = prep_prompt_summarize(analysis_text,tokenizer)
 
     # Tokenize
     inputs2 = tokenizer(prompt2, return_tensors="pt").to(model.device)
